@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react";
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Users, Trophy, Eye, EyeOff, Zap } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function Home() {
   const [gameState, setGameState] = useState("lobby")
@@ -22,6 +23,8 @@ export default function Home() {
   const [clickedNumbers, setClickedNumbers] = useState([3, 7, 12, 18])
   const [lastElimination, setLastElimination] = useState(null)
   const [currentPlayer, setCurrentPlayer] = useState("You")
+  const [showWinnerModal, setShowWinnerModal] = useState(false)
+  const [winner, setWinner] = useState(null)
 
   const handleJoinGame = () => {
     if (playerName && gameId) {
@@ -52,11 +55,38 @@ export default function Home() {
       if (eliminationChance) {
         const activePlayers = players.filter((p) => p.status === "active")
         const randomPlayer = activePlayers[Math.floor(Math.random() * activePlayers.length)]
-        setPlayers(players.map((p) => (p.id === randomPlayer.id ? { ...p, status: "eliminated" } : p)))
+        const updatedPlayers = players.map((p) => (p.id === randomPlayer.id ? { ...p, status: "eliminated" } : p))
+        setPlayers(updatedPlayers)
         setLastElimination(`${randomPlayer.name} has been eliminated!`)
         setTimeout(() => setLastElimination(null), 3000)
+
+        // Check if only one player remains
+        const remainingPlayers = updatedPlayers.filter((p) => p.status === "active")
+        if (remainingPlayers.length === 1) {
+          setTimeout(() => {
+            setWinner(remainingPlayers[0].name)
+            setShowWinnerModal(true)
+          }, 2000) // Show winner modal after elimination message
+        }
       }
     }
+  }
+
+  const handleNewGame = () => {
+    setShowWinnerModal(false)
+    setWinner(null)
+    setGameState("lobby")
+    setPlayerName("")
+    setGameId("")
+    setSelectedNumber(null)
+    setClickedNumbers([])
+    setLastElimination(null)
+    setPlayers([
+      { id: 1, name: "Alex", status: "active", hasSelectedNumber: true },
+      { id: 2, name: "Sarah", status: "active", hasSelectedNumber: true },
+      { id: 3, name: "Mike", status: "active", hasSelectedNumber: true },
+      { id: 4, name: "Emma", status: "active", hasSelectedNumber: true },
+    ])
   }
 
   if (gameState === "lobby") {
@@ -326,6 +356,33 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
+        <Dialog open={showWinnerModal} onOpenChange={setShowWinnerModal}>
+          <DialogContent className="bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 border-yellow-400 text-white max-w-md">
+            <DialogHeader className="text-center">
+              <div className="mx-auto w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-4 animate-bounce">
+                <Trophy className="w-10 h-10 text-yellow-200" />
+              </div>
+              <DialogTitle className="text-3xl font-bold mb-2 animate-pulse">🎉 WINNER! 🎉</DialogTitle>
+              <div className="space-y-4">
+                <div className="text-6xl animate-bounce">👑</div>
+                <h2 className="text-2xl font-bold text-yellow-100">{winner} Wins!</h2>
+                <p className="text-yellow-200">Congratulations! You're the last player standing!</p>
+                <div className="flex flex-col gap-3 mt-6">
+                  <Button onClick={handleNewGame} className="bg-white text-orange-600 hover:bg-yellow-100 font-bold">
+                    🎮 Play Again
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowWinnerModal(false)}
+                    className="border-white text-white hover:bg-white hover:bg-opacity-20"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

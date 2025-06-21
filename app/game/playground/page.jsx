@@ -13,71 +13,40 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Trophy, EyeOff, Zap } from "lucide-react";
+import { io } from "socket.io-client";
 
 export default function GamePage() {
   const { id } = useParams();
   const router = useRouter();
 
   const [game, setGame] = useState(null);
-  const [players, setPlayers] = useState([]);
   const [clickedNumbers, setClickedNumbers] = useState([]);
   const [lastElimination, setLastElimination] = useState(null);
   const [showWinnerModal, setShowWinnerModal] = useState(false);
   const [winner, setWinner] = useState(null);
   const [currentPlayer, setCurrentPlayer] = useState(null);
 
-  const fetchGameData = async () => {
-    try {
-      const res = await fetch(`/api/game?gameId=${id}`);
-      const data = await res.json();
-      setGame(data);
-      setPlayers(data?.players || []);
-    } catch (err) {
-      console.error("Failed to fetch game data", err.message);
-    }
-  };
-
   const handleNumberClick = async (num) => {
     try {
+      if (game?.playerTurn !== currentPlayer?.userId) {
+        alert("Not your turn");
+      }
+
       const move = {
         numberClicked: num,
-        playerId: "",
+        userId: currentPlayer.userId,
         gameId: currentPlayer.game.gameId,
-        isSuccessful: "",
       };
+      console.log("movesRecorded", move);
+
       const res = await fetch(`/api/game/move`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(move),
       });
       const data = await res.json();
     } catch {
       console.log();
-    }
-
-    if (!clickedNumbers.includes(num)) {
-      setClickedNumbers([...clickedNumbers, num]);
-
-      const eliminationChance = Math.random() > 0.7;
-      if (eliminationChance) {
-        const activePlayers = players.filter((p) => p.status === "active");
-        const randomPlayer =
-          activePlayers[Math.floor(Math.random() * activePlayers.length)];
-        const updatedPlayers = players.map((p) =>
-          p.id === randomPlayer.id ? { ...p, status: "eliminated" } : p
-        );
-        setPlayers(updatedPlayers);
-        setLastElimination(`${randomPlayer.name} has been eliminated!`);
-        setTimeout(() => setLastElimination(null), 3000);
-
-        const remaining = updatedPlayers.filter((p) => p.status === "active");
-        if (remaining.length === 1) {
-          setTimeout(() => {
-            setWinner(remaining[0].name);
-            setShowWinnerModal(true);
-          }, 2000);
-        }
-      }
     }
   };
 
@@ -91,13 +60,16 @@ export default function GamePage() {
       const data = await res.json();
       console.log(data);
       setGame(data);
+
+      if (data?.moves) {
+        setClickedNumbers(data?.moves.map((item) => item.numberClicked));
+      }
     } catch (err) {
       setError(err.message);
     }
   };
 
   useEffect(() => {
-    fetchGameData();
     const local = localStorage.getItem("hidden-game-player");
     if (local) {
       const localJson = JSON.parse(local);
@@ -105,6 +77,23 @@ export default function GamePage() {
       fetchGame(localJson?.game?.gameId);
     }
   }, []);
+
+  useEffect(() => {
+    const socket = io({
+      path: "/api/socket_io",
+    });
+
+    socket.emit("join_game", game?.id);
+
+    socket.on("game_update", (data) => {
+      console.log("Live update:", data);
+      // Update state here
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [game?.id]);
 
   if (!game) return null;
 
@@ -157,7 +146,7 @@ export default function GamePage() {
 
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              {players.map((player) => (
+              {game?.players.map((player) => (
                 <div
                   key={player.id}
                   className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
@@ -216,6 +205,7 @@ export default function GamePage() {
                   (_, i) => i + 1
                 ).map((num) => {
                   const isClicked = clickedNumbers.includes(num);
+                  console.log(isClicked);
                   return (
                     <Button
                       key={num}
@@ -245,9 +235,9 @@ export default function GamePage() {
 
             <div className="text-center">
               <p className="text-sm text-slate-400 mb-4">
-                Players remaining:{" "}
-                {players.filter((p) => p.status === "active").length}/
-                {players.length}
+                game?.Players remaining:{" "}
+                {game?.players.filter((p) => p.status === "active").length}/
+                {game?.players.length}
               </p>
               <div className="flex justify-center gap-2">
                 <Button

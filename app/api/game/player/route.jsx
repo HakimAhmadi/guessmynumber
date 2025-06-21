@@ -8,9 +8,9 @@ export async function POST(req) {
 
     const body = await req.json();
     console.log(body);
-    const { gameId, name, secretNumber } = body;
+    const { gameId, name, secretNumber, userId } = body;
 
-    if (!gameId || !name || !secretNumber) {
+    if (!gameId || !name || !secretNumber || !userId) {
       return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400 });
     }
 
@@ -28,7 +28,8 @@ export async function POST(req) {
     const newPlayer = playerRepo.create({
       name,
       secretNumber,
-      game, // ✅ this sets up the foreign key correctly
+      game,
+      userId
     });
 
     const saved = await playerRepo.save(newPlayer);

@@ -40,17 +40,29 @@ export default function Page() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/game/player", {
+      await fetch("/api/game/player", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
-      });
-
-      const data = await res.json();
-
-      localStorage.setItem("hidden-game-player", JSON.stringify(data));
-
-      router.push(`/game/lobby/${data.game.gameId}`);
+      })
+        .then(async (res) => {
+          const data = await res.json();
+          if (!res.ok) {
+            // If status is not OK, reject manually with the error message
+            throw new Error(data?.error || "Failed to join the game.");
+          }
+          return data;
+        })
+        .then((data) => {
+          localStorage.setItem("hidden-game-player", JSON.stringify(data));
+          router.push(`/game/lobby/${data.game.gameId}`);
+        })
+        .catch((err) => {
+          console.error(err.message);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     } catch (err) {
       console.error(err.message);
     } finally {
@@ -62,7 +74,8 @@ export default function Page() {
     const local = localStorage.getItem("hidden-game-player");
     if (local) {
       const localJson = JSON.parse(local);
-      setForm({ ...form, userId: localJson.UserId, name: localJson.name });
+      console.log(localJson);
+      setForm({ ...form, userId: localJson.userId, name: localJson.name });
     } else {
       setForm({ ...form, userId: uuidv4().split("-")[0] });
     }

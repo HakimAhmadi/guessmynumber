@@ -14,12 +14,9 @@ export default function Page() {
   const [playerName, setPlayerName] = useState("");
   const [game, setGame] = useState("");
   const [selectedNumber, setSelectedNumber] = useState(null);
+  const [currentPlayer, setCurrentPlayer] = useState(null);
+  const router = useRouter();
 
-  const handleJoinGame = () => {
-    if (playerName && gameId) {
-      router.push(`/game/${data.game.gameId}`);
-    }
-  };
   const handleStartGame = () => {
     router.push(`/game/${data.game.gameId}`);
     setGameState("playing");
@@ -37,8 +34,29 @@ export default function Page() {
   };
 
   useEffect(() => {
+    if (game && currentPlayer && game?.status === "active") {
+      console.log(game);
+      console.log(currentPlayer)
+      const isPlayerInGame = game.players?.some(
+        (player) => player.userId && currentPlayer?.userId && player.userId === currentPlayer.userId
+      );
+      console.log(isPlayerInGame)
+
+      if (isPlayerInGame) {
+        router.push("/game/playground");
+      }
+    }
+  }, [game, currentPlayer, router]);
+
+  useEffect(() => {
     if (id) {
       fetchGame();
+      const local = localStorage.getItem("hidden-game-player");
+      if (local) {
+        const localJson = JSON.parse(local);
+        setCurrentPlayer(localJson);
+        setSelectedNumber(localJson?.player?.secretNumber);
+      }
     }
   }, [id]);
 

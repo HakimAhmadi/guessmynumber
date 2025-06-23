@@ -14,10 +14,15 @@ import {
 } from "@/components/ui/dialog";
 import { Trophy, EyeOff, Zap } from "lucide-react";
 import { io } from "socket.io-client";
+import { useSocket } from "@/app/hooks/useSocket";
 
 export default function GamePage() {
-  const { id } = useParams();
+  const { gameId } = useParams();
   const router = useRouter();
+  console.log(gameId);
+  const { gameState, sendMove, isConnected } = useSocket(gameId);
+
+  console.log(gameState);
 
   const [game, setGame] = useState(null);
   const [clickedNumbers, setClickedNumbers] = useState([]);
@@ -77,23 +82,6 @@ export default function GamePage() {
       fetchGame(localJson?.game?.gameId);
     }
   }, []);
-
-  useEffect(() => {
-    const socket = io({
-      path: "/api/socket_io",
-    });
-
-    socket.emit("join_game", game?.id);
-
-    socket.on("game_update", (data) => {
-      console.log("Live update:", data);
-      // Update state here
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [game?.id]);
 
   if (!game) return null;
 

@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node server.js",
+    "dev": "next dev",
+    "socket": "node server.js",
     "build": "next build",
     "start": "NODE_ENV=production node server.js",
     "lint": "next lint"
@@ -14,6 +15,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "express": "^5.1.0",
+    "fs": "^0.0.1-security",
     "lucide-react": "^0.513.0",
     "mysql": "^2.18.1",
     "mysql2": "^3.14.1",
